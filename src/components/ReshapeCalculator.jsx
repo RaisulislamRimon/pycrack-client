@@ -1,81 +1,74 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
-const ReshapeCalculator = () => {
-  const [numElements, setNumElements] = useState(16000);
-  const [dimensions, setDimensions] = useState(2);
-  const [shapes, setShapes] = useState([]);
-  const [error, setError] = useState("");
+function App() {
+  const [numElements, setNumElements] = useState("");
+  const [results, setResults] = useState([]);
+  const [error, setError] = useState(null);
 
   const handleCalculate = async () => {
-    setError("");
+    setError(null);
+    setResults([]);
+
+    if (!numElements || isNaN(numElements)) {
+      setError("Please enter a valid number.");
+      return;
+    }
+
     try {
       const response = await fetch("http://127.0.0.1:5000/calculate-shapes", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ num_elements: numElements, dimensions }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ num_elements: parseInt(numElements, 10) }),
       });
+      const data = await response.json();
 
       if (response.ok) {
-        const data = await response.json();
-        setShapes(data.shapes);
+        setResults(data.shapes);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error);
+        setError(data.error);
       }
-    } catch (error) {
-      setError("Failed to connect to the server.");
+    } catch (err) {
+      setError("Error connecting to the server.");
     }
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">NumPy Reshape Calculator</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="p-6 bg-white rounded-lg shadow-lg max-w-md">
+        <h2 className="text-2xl font-bold mb-4">Reshape Calculator</h2>
 
-      <div className="mb-4">
-        <label className="block text-lg mb-2">Total Elements:</label>
         <input
-          type="number"
-          className="border p-2 rounded w-full"
+          type="text"
           value={numElements}
-          onChange={(e) => setNumElements(Number(e.target.value))}
+          onChange={(e) => setNumElements(e.target.value)}
+          placeholder="Enter number of elements"
+          className="w-full px-3 py-2 border border-gray-300 rounded mb-4"
         />
-      </div>
 
-      <div className="mb-4">
-        <label className="block text-lg mb-2">Dimensions:</label>
-        <input
-          type="number"
-          className="border p-2 rounded w-full"
-          value={dimensions}
-          onChange={(e) => setDimensions(Number(e.target.value))}
-        />
-      </div>
+        <button
+          onClick={handleCalculate}
+          className="w-full bg-blue-500 text-white font-semibold py-2 rounded hover:bg-blue-600"
+        >
+          Calculate Reshape Options
+        </button>
 
-      <button
-        className="bg-blue-500 text-white p-2 rounded"
-        onClick={handleCalculate}
-      >
-        Calculate Reshape Options
-      </button>
+        {error && <p className="text-red-500 mt-4">{error}</p>}
 
-      {error && <p className="text-red-500 mt-4">{error}</p>}
-
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-2">Possible Shapes:</h3>
-        {shapes.length > 0 ? (
-          <ul className="list-disc pl-5">
-            {shapes.map((shape, index) => (
-              <li key={index}>{`(${shape.join(", ")})`}</li>
-            ))}
+        <div className="mt-4">
+          <h3 className="text-xl font-semibold">Possible Reshapes:</h3>
+          <ul className="list-disc list-inside mt-2">
+            {results.length > 0 ? (
+              results.map((shape, index) => (
+                <li key={index}>{shape.join(" x ")}</li>
+              ))
+            ) : (
+              <p>No valid reshapes available.</p>
+            )}
           </ul>
-        ) : (
-          <p>No possible shapes found.</p>
-        )}
+        </div>
       </div>
     </div>
   );
-};
+}
 
-export default ReshapeCalculator;
+export default App;
