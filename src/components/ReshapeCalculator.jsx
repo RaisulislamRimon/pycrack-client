@@ -16,7 +16,8 @@ function App() {
     setOutput3D(null);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/reshape', {
+      // const response = await fetch('http://127.0.0.1:5000/reshape', {
+      const response = await fetch('https://pycrack-server.vercel.app/reshape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
