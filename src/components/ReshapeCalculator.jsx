@@ -1,81 +1,85 @@
-import { useState } from "react";
+import React, { useState } from 'react';
 
-const ReshapeCalculator = () => {
-  const [numElements, setNumElements] = useState(16000);
-  const [dimensions, setDimensions] = useState(2);
-  const [shapes, setShapes] = useState([]);
-  const [error, setError] = useState("");
+function App() {
+  const [totalElements, setTotalElements] = useState('');
+  const [output2D, setOutput2D] = useState(null);
+  const [output3D, setOutput3D] = useState(null);
+  const [shape2D, setShape2D] = useState(null);
+  const [shape3D, setShape3D] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleCalculate = async () => {
-    setError("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log(e);
+    setError(null);
+    setOutput2D(null);
+    setOutput3D(null);
+
     try {
-      const response = await fetch("http://127.0.0.1:5000/calculate-shapes", {
-        method: "POST",
+      const response = await fetch('http://127.0.0.1:5000/reshape', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ num_elements: numElements, dimensions }),
+        body: JSON.stringify({
+          total_elements: parseInt(totalElements),
+        }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setShapes(data.shapes);
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.error);
+        throw new Error(errorData.error || 'An error occurred');
       }
-    } catch (error) {
-      setError("Failed to connect to the server.");
+
+      const data = await response.json();
+      setOutput2D(data.reshaped_2d);
+      setOutput3D(data.reshaped_3d);
+      setShape2D(data.shape_2d);
+      setShape3D(data.shape_3d);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">NumPy Reshape Calculator</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md space-y-4">
+        <h1 className="text-2xl font-bold text-center mb-4">Array Reshape Tool</h1>
 
-      <div className="mb-4">
-        <label className="block text-lg mb-2">Total Elements:</label>
-        <input
-          type="number"
-          className="border p-2 rounded w-full"
-          value={numElements}
-          onChange={(e) => setNumElements(Number(e.target.value))}
-        />
-      </div>
+        <div>
+          <label className="block font-medium">Total Elements</label>
+          <input
+            type="number"
+            value={totalElements}
+            onChange={(e) => setTotalElements(e.target.value)}
+            placeholder="Enter total elements"
+            className="mt-1 p-2 border rounded w-full"
+            required
+          />
+        </div>
 
-      <div className="mb-4">
-        <label className="block text-lg mb-2">Dimensions:</label>
-        <input
-          type="number"
-          className="border p-2 rounded w-full"
-          value={dimensions}
-          onChange={(e) => setDimensions(Number(e.target.value))}
-        />
-      </div>
+        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          Get 2D and 3D Reshapes
+        </button>
 
-      <button
-        className="bg-blue-500 text-white p-2 rounded"
-        onClick={handleCalculate}
-      >
-        Calculate Reshape Options
-      </button>
+        {error && <p className="text-red-500 mt-2">Error: {error}</p>}
 
-      {error && <p className="text-red-500 mt-4">{error}</p>}
-
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-2">Possible Shapes:</h3>
-        {shapes.length > 0 ? (
-          <ul className="list-disc pl-5">
-            {shapes.map((shape, index) => (
-              <li key={index}>{`(${shape.join(", ")})`}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No possible shapes found.</p>
+        {output2D && (
+          <div className="mt-4 p-4 bg-gray-50 rounded border">
+            <h2 className="font-semibold mb-2">2D Array Shape ({shape2D[0]} x {shape2D[1]}):</h2>
+            <pre>{JSON.stringify(output2D, null, 2)}</pre>
+          </div>
         )}
-      </div>
+
+        {output3D && (
+          <div className="mt-4 p-4 bg-gray-50 rounded border">
+            <h2 className="font-semibold mb-2">3D Array Shape ({shape3D[0]} x {shape3D[1]} x {shape3D[2]}):</h2>
+            <pre>{JSON.stringify(output3D, null, 2)}</pre>
+          </div>
+        )}
+      </form>
     </div>
   );
-};
+}
 
-export default ReshapeCalculator;
+export default App;
